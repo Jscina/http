@@ -18,10 +18,27 @@ pub fn handle_connection(mut stream: TcpStream) {
 
     println!("Request: {:#?}", req);
 
-    let body = "<html><body><h1>Hello, World!</h1></body></html>";
-    let response = HttpResponse::new(&req.version, 200, "OK")
-        .with_body(body, "text/html")
-        .format();
+    let response = match req.path.as_str() {
+        "/greet" => {
+            let name = req.query.get("name").map_or("stranger", |v| v);
+            let body = format!("<html><body><h1>Hello, {}!</h1></body></html>", name);
+            HttpResponse::new(&req.version, 200, "OK")
+                .with_body(&body, "text/html")
+                .format()
+        }
+        "/" => {
+            let body = "<html><body><h1>Hello, World!</h1></body></html>";
+            HttpResponse::new(&req.version, 200, "OK")
+                .with_body(body, "text/html")
+                .format()
+        }
+        _ => {
+            let body = "<html><body><h1>404 Not Found</h1></body></html>";
+            HttpResponse::new(&req.version, 404, "Not Found")
+                .with_body(body, "text/html")
+                .format()
+        }
+    };
 
     let _ = stream.write_all(response.as_bytes());
     let _ = stream.flush();
